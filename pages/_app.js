@@ -1,7 +1,34 @@
-import '../styles/globals.css'
+import { useAuthState } from "react-firebase-hooks/auth";
+import { Center, ChakraProvider, Spinner } from "@chakra-ui/react";
+import { auth } from "../firebaseconfig";
+import Login from "../components/Login";
 
 function MyApp({ Component, pageProps }) {
-  return <Component {...pageProps} />
+  const [user, loading, error] = useAuthState(auth);
+
+  if (loading) {
+    return (
+      <ChakraProvider>
+        <Center h="100vh" size="xl">
+          <Spinner />
+        </Center>
+      </ChakraProvider>
+    );
+  }
+
+  if (!user) {
+    return (
+      <ChakraProvider>
+        <Login />
+      </ChakraProvider>
+    );
+  }
+
+  return (
+    <ChakraProvider>
+      <Component {...pageProps} />
+    </ChakraProvider>
+  );
 }
 
-export default MyApp
+export default MyApp;
