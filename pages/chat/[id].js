@@ -1,12 +1,4 @@
-import {
-  Avatar,
-  Button,
-  Flex,
-  FormControl,
-  Heading,
-  Input,
-  Text,
-} from "@chakra-ui/react";
+import { Avatar, Flex, Heading, Text, Spinner, Center } from "@chakra-ui/react";
 import Head from "next/head";
 import { useRouter } from "next/router";
 import { Sidebar } from "../../components/Sidebar";
@@ -14,54 +6,13 @@ import {
   useCollectionData,
   useDocumentData,
 } from "react-firebase-hooks/firestore";
-import {
-  collection,
-  doc,
-  orderBy,
-  query,
-  serverTimestamp,
-  addDoc,
-} from "firebase/firestore";
+import { collection, doc, orderBy, query } from "firebase/firestore";
 import { db, auth } from "../../firebaseconfig";
 import { useAuthState } from "react-firebase-hooks/auth";
-import getOtherEmail from "../../utils/getOtherEmail";
-import { useState, useRef, useEffect } from "react";
-
-const Topbar = ({ email }) => {
-  return (
-    <Flex bg="gray.100" h="81px" w="100%" align="center" p={5}>
-      <Avatar src="" marginEnd={3} />
-      <Heading size="lg">{email}</Heading>
-    </Flex>
-  );
-};
-
-const BottomBar = ({ id, user }) => {
-  const [input, setInput] = useState("");
-  const sendMessage = async (e) => {
-    e.preventDefault();
-    await addDoc(collection(db, "chats", id, "messages"), {
-      text: input,
-      sender: user.email,
-      timestamp: serverTimestamp(),
-    });
-    setInput("");
-  };
-
-  return (
-    <FormControl p={3} onSubmit={sendMessage} as="form">
-      <Input
-        placeholder="Type a message"
-        autoComplete="off"
-        onChange={(e) => setInput(e.target.value)}
-        value={input}
-      />
-      <Button type="submit" hidden>
-        Submit
-      </Button>
-    </FormControl>
-  );
-};
+import { useRef, useEffect } from "react";
+import getOtherUser from "../../utils/getOtherUser";
+import BottomBar from "../../components/BottomBar";
+import TopBar from "../../components/TopBar";
 
 const Chat = () => {
   const router = useRouter();
@@ -73,8 +24,10 @@ const Chat = () => {
     collection(db, "chats", id, "messages"),
     orderBy("timestamp")
   );
-  const [messages] = useCollectionData(q);
+
+  const [messages, loading] = useCollectionData(q);
   const [chat] = useDocumentData(doc(db, "chats", id));
+  
   const bottomOfChat = useRef();
 
   useEffect(() => {
@@ -90,19 +43,22 @@ const Chat = () => {
   const getMessages = () => {
     return messages?.map((msg) => {
       const sender = msg.sender === user.email;
-
       return (
         <Flex
           key={Math.random()}
-          bg={sender ? "blue.100" : "green.100"}
+          direction="column"
           alignSelf={sender ? "flex-start" : "flex-end"}
-          w="fit-content"
-          minWidth="100px"
-          borderRadius="lg"
-          p={3}
-          m={1}
         >
-          <Text>{msg.text}</Text>
+          <Flex
+            bg={sender ? "blue.100" : "green.100"}
+            w="fit-content"
+            minWidth="100px"
+            borderRadius="lg"
+            p={3}
+            m={1}
+          >
+            <Text>{msg.text}</Text>
+          </Flex>
         </Flex>
       );
     });
@@ -116,8 +72,13 @@ const Chat = () => {
       <Sidebar />
 
       <Flex flex={1} direction="column">
-        <Topbar email={getOtherEmail(chat?.users, user)} />
+        <TopBar email={getOtherUser(chat?.users, user)} />
 
+        {loading && (
+          <Center h="100vh" size="xl">
+            <Spinner />
+          </Center>
+        )}
         <Flex
           flex={1}
           direction="column"
